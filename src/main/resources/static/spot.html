@@ -1,0 +1,249 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.2/css/all.min.css" rel="stylesheet"/>
+    <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=01a438cc8b43a7865e509485475fbe78"
+            type="text/javascript"></script>
+    <script>
+
+        function makeMarkers(spotList, map) {
+            let imageSrc = "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png";
+            //{"id":23893,
+            // "addr1":null,
+            // "addr2":null,
+            // "areacode":"36",
+            // "cat1":"C01","cat2":"C0112","cat3":"C01120001",
+            // "contentid":"2402735",
+            // "contenttypeid":"25",
+            // "createdtime":"20160818144731",
+            // "firstimage":"http://tong.visitkorea.or.kr/cms/resource/59/1609959_image2_1.jpg",
+            // "firstimage2":"http://tong.visitkorea.or.kr/cms/resource/59/1609959_image3_1.jpg",
+            // "mapx":128.596,
+            // "mapy":34.8522,
+            // "mlevel":"6",
+            // "modifiedtime":"20160926183350",
+            // "readcount":"10374",
+            // "sigungucode":"1",
+            // "tel":null,
+            // "title":"“해금강이 전부인 줄 알았지?”...거제에서 배우는 역사",
+            // "zipcode":null
+            // }
+            console.log(spotList.length);
+
+            for (let idx = 0, len = spotList.length; idx < len; idx++) {
+                let currentSpot = spotList[idx]
+                let imageSize = new kakao.maps.Size(24, 35);
+                let markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize);
+                let position = new kakao.maps.LatLng(parseFloat(currentSpot.mapy), parseFloat(currentSpot.mapx));
+                let content = "<div>" + currentSpot.title + "</div>";
+
+                // 마커를 생성합니다
+                let marker = new kakao.maps.Marker({
+                    map: map, // 마커를 표시할 지도
+                    // position: spotList[idx].latlng, // 마커를 표시할 위치
+                    position: position,
+                    title: currentSpot.title,
+                    image: markerImage // 마커 이미지
+                });
+
+                let infowindow = new kakao.maps.InfoWindow({
+                    content: content // 인포윈도우에 표시할 내용
+                });
+
+
+                kakao.maps.event.addListener(marker, 'mouseover', makeOverListener(map, marker, infowindow));
+                kakao.maps.event.addListener(marker, 'mouseout', makeOutListener(infowindow));
+
+            }
+        }
+
+        // 인포윈도우를 표시하는 클로저를 만드는 함수입니다
+        function makeOverListener(map, marker, infowindow) {
+            return function () {
+                infowindow.open(map, marker);
+            };
+        }
+
+        // 인포윈도우를 닫는 클로저를 만드는 함수입니다
+        function makeOutListener(infowindow) {
+            return function () {
+                infowindow.close();
+            };
+        }
+
+
+        let latestRequest = setTimeout(() => {
+            console.log("init page");
+        }, 5000);
+
+        window.onload = () => {
+            let currentPosition = navigator.geolocation.getCurrentPosition((location) => {
+                return location
+            });
+            console.log(currentPosition);
+            let mapContainer = document.getElementById('map'),
+                mapOption = {
+                    center: new kakao.maps.LatLng(33.450701, 126.570667),
+                    level: 3
+                };
+
+            let map = new kakao.maps.Map(mapContainer, mapOption);
+            let mapTypeControl = new kakao.maps.MapTypeControl();
+            map.addControl(mapTypeControl, kakao.maps.ControlPosition.TOPRIGHT);
+
+            kakao.maps.event.addListener(map, "bounds_changed", function () {
+                clearTimeout(latestRequest);
+                let bounds = map.getBounds();
+                let lating = map.getCenter();
+                let swLatlng = bounds.getSouthWest();
+
+                // 영역정보의 북동쪽 정보를 얻어옵니다
+                let neLatlng = bounds.getNorthEast();
+                let message = "변경된 지도 남서쪽 위도, 경도는 " + swLatlng.getLat() + ", " + swLatlng.getLng() + "이고, " + "북동쪽 위도, 경도는 " + neLatlng.toString() + "입니다";
+
+                latestRequest = setTimeout(() => {
+                    document.querySelector("#spotList").innerHTML = "";
+                    console.log(message);
+                    const xhr = new XMLHttpRequest();
+                    const method = "GET";
+                    const url = "http://localhost:8080/spots";
+                    const param = "?lngStart=" + swLatlng.getLng() + "&lngEnd=" + neLatlng.getLng() + "&latStart=" + swLatlng.getLat() + "&latEnd=" + neLatlng.getLat();
+
+                    xhr.open(method, url + param);
+                    xhr.onreadystatechange = (event) => {
+                        const {target} = event;
+                        if (target.readyState === XMLHttpRequest.DONE) {
+                            const {status} = target;
+                            if (status === 0 || (status >= 200 && status < 400)) {
+                                makeMarkers(JSON.parse(xhr.responseText), map);
+                            } else {
+                                console.log("에러 발생!")
+                            }
+                        }
+                    }
+                    xhr.send();
+                }, 1000);
+            })
+
+        }
+    </script>
+
+    <style>
+        body {
+            margin: 0px;
+            padding: 0px
+        }
+
+        nav {
+            position: fixed;
+            width: 100%;
+            height: 100px;
+            background-color: antiquewhite;
+            display: flex;
+            justify-content: space-evenly;
+
+        }
+
+        #logo {
+            margin: 0 30px;
+            width: 200px;
+            display: flex;
+            align-items: center;
+        }
+
+        #logo > img {
+            width: 200px;
+        }
+
+        #forcast {
+            width: 850px;
+            height: 100%;
+            display: flex;
+        }
+
+        #map {
+            top: 100px;
+            position: fixed;
+            width: 70%;
+            height: calc(100% - 100px);
+            /* position: relative; */
+            overflow: hidden;
+            background: url(http://t1.daumcdn.net/mapjsapi/images/bg_tile.png);
+            right: 0px;
+
+        }
+
+        #spotList {
+            position: fixed;
+            top: 100px;
+            left: 0px;
+            width: 30%;
+            height: calc(100% - 100px);
+            overflow: scroll;
+            overflow-x: hidden;
+        }
+
+    </style>
+</head>
+<body>
+<nav>
+    <div id="logo">
+        <img alt="" src="/logo.png">
+    </div>
+    <div id="forcast">
+        날씨 데이터가 여기 표시될..지도?
+    </div>
+    <div id="logo">
+    </div>
+</nav>
+<div id="spotList">
+    <p>테스트 리스트들!!!!1</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+    <p>테스트 리스트들!!!!</p>
+</div>
+<div id="map"></div>
+</body>
+<footer>
+
+</footer>
+</html>
