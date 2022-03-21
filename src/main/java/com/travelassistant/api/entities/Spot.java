@@ -13,7 +13,7 @@ import javax.persistence.*;
 public class Spot {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "spotIdx", nullable = false)
+    @Column(name = "spots_idx", nullable = false)
     private Integer id;
 
     @Column(name = "addr1", length = 400)
@@ -77,7 +77,7 @@ public class Spot {
     private String zipcode;
 
     @Builder
-    public Spot( Integer id, String addr1, String addr2, String areacode, String cat1, String cat2, String cat3, String contentid, String contenttypeid, String createdtime, String firstimage, String firstimage2, Double mapx, Double mapy, String mlevel, String modifiedtime, String readcount, String sigungucode, String tel, String title, String zipcode ) {
+    public Spot(Integer id, String addr1, String addr2, String areacode, String cat1, String cat2, String cat3, String contentid, String contenttypeid, String createdtime, String firstimage, String firstimage2, Double mapx, Double mapy, String mlevel, String modifiedtime, String readcount, String sigungucode, String tel, String title, String zipcode) {
         this.id = id;
         this.addr1 = addr1;
         this.addr2 = addr2;
