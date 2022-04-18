@@ -1,23 +1,26 @@
 package com.travelassistant.api.controller;
 
 import com.travelassistant.api.entities.Spot;
+import com.travelassistant.api.entities.Weather;
 import com.travelassistant.api.service.SpotService;
+import com.travelassistant.api.service.WeatherService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(value = "/weather/")
+@RequestMapping(value = "/weather")
 public class weatherController {
-    private final SpotService spotService;
+    private final WeatherService weatherService;
 
-    @GetMapping("{areacode}")
-    public List<Spot> getSpotsByAreaCode( @PathVariable String areacode ) {
-        return spotService.findByAreacode(areacode);
+    @GetMapping("")
+    public List<Weather> getWeatherOnDate(@RequestParam Integer nx, @RequestParam Integer ny, @RequestParam String ondate) {
+        log.info(nx + " " + ny + " " + ondate);
+        return weatherService.getNxNyWeatherOnDate(nx, ny, ondate);
     }
 }

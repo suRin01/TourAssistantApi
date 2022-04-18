@@ -6,6 +6,68 @@
     <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=01a438cc8b43a7865e509485475fbe78"
             type="text/javascript"></script>
     <script>
+        function setWeather(x, y) {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth();
+            const date = today.getDate();
+            const tomorrow = date + 1;
+            const dayAfter = date + 2;
+            const dateCode = `${year}-${month >= 10 ? month : '0' + month}-${date >= 10 ? date : '0' + date}`
+            const tomorrowDateCode = `${year}-${month >= 10 ? month : '0' + month}-${tomorrow >= 10 ? tomorrow : '0' + tomorrow}`
+            const dayAfterDateCode = `${year}-${month >= 10 ? month : '0' + month}-${dayAfter >= 10 ? dayAfter : '0' + dayAfter}`
+
+            getWeatherList(x, y, dateCode);
+            getWeatherList(x, y, tomorrowDateCode);
+            getWeatherList(x, y, dayAfterDateCode);
+
+        }
+
+        function getWeatherList(x, y, date) {
+            const xhr = new XMLHttpRequest();
+            const method = "GET";
+            const weatherUrl = "http://localhost:8080/weather";
+            const weatherParam = "?nx=" + x + "&ny=" + y + "&ondate=" + date;
+
+            xhr.open(method, weatherUrl + weatherParam);
+            xhr.onreadystatechange = (event) => {
+                const {target} = event;
+                if (target.readyState === XMLHttpRequest.DONE) {
+                    const {status} = target;
+                    if (status === 0 || (status >= 200 && status < 400)) {
+                        let weatherList = JSON.parse(xhr.responseText);
+                        console.log(convertSkyCodeToStatus(weatherList));
+                    } else {
+                        console.log("에러 발생!")
+                    }
+                }
+            }
+            xhr.send();
+        }
+
+        function convertSkyCodeToStatus(weatherList) {
+            let result = "wi-day-sunny";
+            weatherList.forEach((weather) => {
+                if (weather.category == "SKY" && weather.fcstValue == 1) {
+                    result = "wi-day-sunny"
+                } else if (weather.category == "SKY" && weather.fcstValue == 3) {
+                    result = "wi-day-cloudy"
+                } else if (weather.category == "SKY" && weather.fcstValue == 4) {
+                    result = "wi-day-fog"
+                } else if (weather.category == "PTY" && weather.fcstValue == 1) {
+                    result = "wi-day-rain.svg"
+                } else if (weather.category == "PTY" && weather.fcstValue == 2) {
+                    result = "wi-day-rain.svg"
+                } else if (weather.category == "PTY" && weather.fcstValue == 3) {
+                    result = "wi-day-snow.svg"
+                } else if (weather.category == "PTY" && weather.fcstValue == 4) {
+                    result = "wi-day-rain.svg"
+                }
+            })
+
+            return result;
+
+        }
 
         function updateSpotListNavBar(spotList) {
             for (let idx = 0, len = spotList.length; idx < len; idx++) {
@@ -14,14 +76,6 @@
         }
 
         function spotItemFactory(spot) {
-            // <div class="spot">
-            //     <div class="title">안녕하세용</div>
-            //     <div class="content">
-            //         <div class="image"><img alt="" src="http://tong.visitkorea.or.kr/cms/resource/59/1609959_image2_1.jpg">
-            //         </div>
-            //         <div class="subtitle">설명설명설명</div>
-            //     </div>
-            // </div>
             let totalAddress = spot.addr1 ? spot.addr1 : "" + spot.addr2 ? spt.addr2 : "";
             let image = spot.firstimage ? spot.firstimage : "/logo.png"
 
@@ -37,26 +91,6 @@
 
         function makeMarkers(spotList, map) {
             let imageSrc = "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png";
-            //{"id":23893,
-            // "addr1":null,
-            // "addr2":null,
-            // "areacode":"36",
-            // "cat1":"C01","cat2":"C0112","cat3":"C01120001",
-            // "contentid":"2402735",
-            // "contenttypeid":"25",
-            // "createdtime":"20160818144731",
-            // "firstimage":"http://tong.visitkorea.or.kr/cms/resource/59/1609959_image2_1.jpg",
-            // "firstimage2":"http://tong.visitkorea.or.kr/cms/resource/59/1609959_image3_1.jpg",
-            // "mapx":128.596,
-            // "mapy":34.8522,
-            // "mlevel":"6",
-            // "modifiedtime":"20160926183350",
-            // "readcount":"10374",
-            // "sigungucode":"1",
-            // "tel":null,
-            // "title":"“해금강이 전부인 줄 알았지?”...거제에서 배우는 역사",
-            // "zipcode":null
-            // }
             console.log(spotList.length);
 
             for (let idx = 0, len = spotList.length; idx < len; idx++) {
@@ -109,10 +143,22 @@
             let currentPosition = navigator.geolocation.getCurrentPosition((location) => {
                 return location
             });
-            console.log(currentPosition);
+
+            const urlStr = window.location.href;
+            const url = (new URL(urlStr)).searchParams
+
+            const x = url.get("x");
+            const y = url.get("y");
+            const lng = url.get("lng") ? url.get("lng") : 33.45550654211887;
+            const lat = url.get("lat") ? url.get("lat") : 126.57597252154804;
+
+            // get Weather Data
+            setWeather(x, y);
+
+
             let mapContainer = document.getElementById('map'),
                 mapOption = {
-                    center: new kakao.maps.LatLng(33.450701, 126.570667),
+                    center: new kakao.maps.LatLng(lng, lat),
                     level: 3
                 };
 
@@ -219,16 +265,18 @@
             width: 200px;
         }
 
-        #forcast {
+        #forecast {
             width: 850px;
             height: 100%;
             display: flex;
+            flex-direction: row;
+            justify-content: space-evenly;
         }
 
         #map {
             top: 100px;
             position: fixed;
-            width: 70%;
+            width: 60%;
             height: calc(100% - 100px);
             /* position: relative; */
             overflow: hidden;
@@ -241,7 +289,7 @@
             position: fixed;
             top: 100px;
             left: 0px;
-            width: 30%;
+            width: 40%;
             height: calc(100% - 100px);
             overflow: scroll;
             overflow-x: hidden;
@@ -254,63 +302,36 @@
     <div id="logo">
         <img alt="" src="/logo.png">
     </div>
-    <div id="forcast">
-        날씨 데이터가 여기 표시될..지도?
+    <div id="forecast">
+        <div class="weather">
+            <div class="forecastDate">
+                04월 04일
+            </div>
+            <div class="icon">
+                <img alt="" src="/svg/wi-day-sunny.svg">
+            </div>
+        </div>
+        <div class="weather">
+            <div class="forecastDate">
+                04월 05일
+            </div>
+            <div class="icon">
+                <img alt="" src="/svg/wi-day-sunny.svg">
+            </div>
+        </div>
+        <div class="weather">
+            <div class="forecastDate">
+                04월 06일
+            </div>
+            <div class="icon">
+                <img alt="" src="/svg/wi-day-cloudy-gusts.svg">
+            </div>
+        </div>
     </div>
     <div id="logo">
     </div>
 </nav>
 <div id="spotList">
-    <div class="spot">
-        <div class="title">안녕하세용</div>
-        <div class="content">
-            <div class="image"><img alt="" src="http://tong.visitkorea.or.kr/cms/resource/59/1609959_image2_1.jpg">
-            </div>
-            <div class="subtitle">설명설명설명</div>
-        </div>
-    </div>
-    <p>테스트 리스트들!!!!1</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
-    <p>테스트 리스트들!!!!</p>
 </div>
 <div id="map"></div>
 </body>

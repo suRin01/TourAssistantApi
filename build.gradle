@@ -3,10 +3,13 @@ plugins {
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
 }
-
+apply plugin: 'war'
+bootWar {
+    archiveName("demo.war")
+}
 group = 'com.travelAssistant.api'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '11'
+sourceCompatibility = '8'
 
 configurations {
     compileOnly {
@@ -27,6 +30,9 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     compileOnly("org.springframework.boot:spring-boot-devtools")
     implementation group: 'mysql', name: 'mysql-connector-java', version: '8.0.28'
+    providedRuntime('org.springframework.boot:spring-boot-starter-tomcat')
+    // https://mvnrepository.com/artifact/antlr/antlr
+    implementation group: 'antlr', name: 'antlr', version: '2.7.7'
 
 }
 
