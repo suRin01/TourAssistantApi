@@ -171,8 +171,12 @@
                         <form>
                             <div class="form-group">
                                 <span class="form-label">Your Destination</span>
-                                <input class="form-control" id="location" placeholder="Enter a destination or hotel name"
-                                       type="text">
+                                <input autocomplete="off" class="form-control"
+                                       data-locationX="70"
+                                       data-locationY="120" id="location"
+                                       placeholder="Enter a destination or hotel name"
+                                       type="text"
+                                >
                             </div>
                             <div class="row">
                                 <div>
@@ -183,7 +187,7 @@
                                 </div>
                             </div>
                             <div class="form-btn">
-                                <button class="submit-btn">Check availability</button>
+                                <button class="submit-btn" onclick="locateSpotPage()">Check availability</button>
                             </div>
                         </form>
                     </div>
@@ -197,6 +201,18 @@
 
 <script src="/auto.js"></script>
 <script>
-    autocomplete(document.getElementById("location"), countries);
+    autocomplete(document.getElementById("location"));
+
+    function locateSpotPage() {
+        event.preventDefault();
+        let locationInput = document.querySelector("#location");
+        let x = locationInput.dataset.locationx;
+        let y = locationInput.dataset.locationy;
+        let lng = locationInput.dataset.lng;
+        let lat = locationInput.dataset.lat;
+
+        console.log(x, y, lng, lat);
+        window.location.href = `/spot.html?x=${x}&y=${y}&lng=${lng}&lat=${lat}`
+    }
 </script>
 </html>
